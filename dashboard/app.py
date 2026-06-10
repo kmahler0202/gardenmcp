@@ -34,14 +34,33 @@ tabs = page.get("tabs", [])
 sections = state.get("sections", [])
 notifications = state.get("notifications", [])
 
+# Hide Streamlit chrome
+st.markdown("""
+<style>
+    #MainMenu, footer, header { visibility: hidden; }
+    .block-container { padding-top: 1.5rem !important; }
+</style>
+""", unsafe_allow_html=True)
+
 # Render notifications
 for n in notifications:
     getattr(st, n["level"])(n["message"])
 
-# Render title + timestamp
-st.title(page.get("title", "My Hub"))
+# Header
+_left, _right = st.columns([4, 1])
+_left.markdown(f"## 🌱 &nbsp;{page.get('title', 'My Hub')}")
 if state.get("last_updated"):
-    st.caption(f"Last updated: {state['last_updated']}")
+    try:
+        from datetime import datetime
+        _dt = datetime.fromisoformat(state["last_updated"]).astimezone()
+        _label = _dt.strftime("%b %d · %I:%M %p").lstrip("0").replace(" 0", " ")
+    except Exception:
+        _label = state["last_updated"][:16]
+    _right.markdown(
+        f"<div style='text-align:right;padding-top:1rem;color:#999;font-size:0.8rem;'>↻ {_label}</div>",
+        unsafe_allow_html=True,
+    )
+st.divider()
 
 # Sort sections
 sorted_sections = sorted(sections, key=lambda s: (s.get("order") is None, s.get("order", 0)))
