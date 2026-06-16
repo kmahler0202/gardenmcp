@@ -10,19 +10,50 @@ services:
       - redis_data:/data
     command: redis-server --appendonly yes
 
-  dashboard:
+  gateway:
     build:
       context: .
-      dockerfile: dashboard/Dockerfile
+      dockerfile: gateway/Dockerfile
     ports:
-      - "8501:8501"
+      - "8080:8080"
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - POLL_INTERVAL=2
     depends_on:
       - redis
+    volumes:
+      - ./gateway:/app/gateway
+      - ./shared:/app/shared
     restart: unless-stopped
+
+  garden-ui:
+    build:
+      context: garden-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_GATEWAY_URL=http://gateway:8080
+    depends_on:
+      - gateway
+    volumes:
+      - ./garden-ui/src:/app/src
+      - ./garden-ui/public:/app/public
+    restart: unless-stopped
+
+  # dashboard (Streamlit) — superseded by garden-ui; kept for reference
+  # dashboard:
+  #   build:
+  #     context: .
+  #     dockerfile: dashboard/Dockerfile
+  #   ports:
+  #     - "8501:8501"
+  #   environment:
+  #     - REDIS_HOST=redis
+  #     - REDIS_PORT=6379
+  #     - POLL_INTERVAL=2
+  #   depends_on:
+  #     - redis
+  #   restart: unless-stopped
 
 volumes:
   redis_data:

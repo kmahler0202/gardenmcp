@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from copy import deepcopy
 
 REDIS_KEY = "garden:state"
+PUBSUB_CHANNEL = "garden:updates"
 
 EMPTY_STATE = {
     "page": {"title": "My Hub", "layout": "wide", "tabs": []},
@@ -33,8 +34,13 @@ def get_state() -> dict:
         return deepcopy(EMPTY_STATE)
     return json.loads(raw)
 
+def publish_update(state: dict) -> None:
+    client = get_client()
+    client.publish(PUBSUB_CHANNEL, json.dumps(state))
+
 def set_state(state: dict) -> None:
     """Serialize and write state to Redis atomically."""
     state["last_updated"] = datetime.now(timezone.utc).isoformat()
     client = get_client()
     client.set(REDIS_KEY, json.dumps(state))
+    publish_update(state)
